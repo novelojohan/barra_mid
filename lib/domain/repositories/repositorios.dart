@@ -39,4 +39,8 @@ abstract class ConfigRepository {
   Future<void> guardarUltimoEmpleado(String nombre);
   Future<GeoPunto?> obtenerUbicacionTienda();
   Future<void> guardarUbicacionTienda(GeoPunto punto);
+
+  /// PIN del modo administrador (null si todavía no se crea).
+  Future<String?> obtenerPinAdmin();
+  Future<void> guardarPinAdmin(String pin);
 }

@@ -40,3 +40,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Tipografía de títulos (Playfair Display, licencia OFL)
+  fonts:
+    - family: Playfair
+      fonts:
+        - asset: assets/fonts/PlayfairDisplay.ttf

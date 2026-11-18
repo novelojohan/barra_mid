@@ -9,7 +9,7 @@ import '../../core/errors/app_exception.dart';
 /// los repositorios.
 class AppDatabase {
   static const _nombreArchivo = 'barra_mid.db';
-  static const _version = 1;
+  static const _version = 2; // v2: agrega Oreo
 
   Future<Database>? _db;
 
@@ -23,6 +23,7 @@ class AppDatabase {
         p.join(carpeta, _nombreArchivo),
         version: _version,
         onCreate: _crearTablas,
+        onUpgrade: _actualizar,
       );
     } catch (e) {
       _db = null; // Para poder reintentar después
@@ -88,6 +89,24 @@ class AppDatabase {
     await batch.commit(noResult: true);
   }
 
+  /// Migraciones: si la app ya estaba instalada con una versión vieja
+  /// de la BD, se agregan los cambios sin borrar los datos.
+  Future<void> _actualizar(Database db, int anterior, int nueva) async {
+    if (anterior < 2) {
+      final existe = await db.query('insumos',
+          where: 'nombre = ?', whereArgs: ['Oreo'], limit: 1);
+      if (existe.isEmpty) {
+        await db.insert('insumos', {
+          'nombre': 'Oreo',
+          'ubicacion': 'barra',
+          'unidad': 'botes',
+          'cantidad': 1,
+          'minimo': 1,
+        });
+      }
+    }
+  }
+
   /// Insumos y pendientes reales de la barra para que la app no
   /// arranque vacía.
   void _insertarDatosIniciales(Batch batch) {
@@ -110,6 +129,7 @@ class AppDatabase {
       ['Cocoa', 'barra', 'botes', 1, 1],
       ['Choco Abuelita', 'barra', 'botes', 1, 1],
       ['Dátiles', 'barra', 'botes', 1, 1],
+      ['Oreo', 'barra', 'botes', 1, 1],
     ];
 
     for (final i in insumos) {

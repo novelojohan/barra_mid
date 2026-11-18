@@ -34,7 +34,6 @@ class UiFeedback {
         action: irAjustes
             ? SnackBarAction(
                 label: 'Ajustes',
-                textColor: Colors.white,
                 onPressed: () => Injector.instance.ubicacion.abrirAjustesApp(),
               )
             : null,

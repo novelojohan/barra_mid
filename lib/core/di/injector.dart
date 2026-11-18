@@ -35,4 +35,8 @@ class Injector {
 
   /// Nombre de quien está en turno (se pide en el login).
   String empleado = '';
+
+  /// true cuando se entró al modo administrador con el PIN.
+  /// Solo en modo admin se pueden borrar registros y pendientes.
+  bool esAdmin = false;
 }

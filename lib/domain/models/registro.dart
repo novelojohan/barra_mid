@@ -5,7 +5,7 @@ import 'geo_punto.dart';
 /// Tipo de movimiento que se anota en la bitácora.
 /// [signo] indica si suma (+1) o resta (-1) al inventario.
 enum TipoRegistro {
-  produccion('produccion', 'Producción', 1),
+  produccion('produccion', 'Producción / relleno', 1),
   preparados('preparados', 'Preparé mixes', 1),
   salida('salida', 'Uso / salida', -1),
   merma('merma', 'Merma', -1);

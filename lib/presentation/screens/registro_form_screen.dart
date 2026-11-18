@@ -73,6 +73,11 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
       UiFeedback.exito(context, 'Marca al menos un insumo con cantidad');
       return;
     }
+    // La foto de evidencia es obligatoria en todos los registros
+    if (_fotoPath == null) {
+      UiFeedback.exito(context, 'Toma la foto de evidencia para poder guardar');
+      return;
+    }
 
     setState(() => _guardando = true);
 
@@ -88,7 +93,7 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
         tipo: _tipo,
         items: items,
         nota: _notaCtrl.text.trim(),
-        fotoPath: _fotoPath,
+        fotoPath: _fotoPath!,
         ubicacion: ubicacion.captura?.punto,
         enTienda: ubicacion.captura?.enTienda,
         empleado: _di.empleado,
@@ -164,7 +169,8 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                   ),
                   const SizedBox(height: 20),
                   FotoEvidenciaField(
-                    etiqueta: 'Foto (evidencia)',
+                    etiqueta: 'Foto de evidencia',
+                    obligatoria: true,
                     ruta: _fotoPath,
                     alCambiar: (ruta) => setState(() => _fotoPath = ruta),
                   ),

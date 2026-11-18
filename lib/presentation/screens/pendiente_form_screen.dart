@@ -72,7 +72,7 @@ class _PendienteFormScreenState extends State<PendienteFormScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _area,
+              initialValue: _area,
               decoration: const InputDecoration(
                 labelText: 'Área',
                 border: OutlineInputBorder(),

@@ -195,7 +195,7 @@ class _ListaInsumos extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: alRefrescar,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
         children: [
           if (bajos > 0)
             Card(
@@ -211,36 +211,118 @@ class _ListaInsumos extends StatelessWidget {
           for (var i = 0; i < insumos.length; i++)
             AparicionAnimada(
               indice: i,
-              child: Card(
-                child: ListTile(
-                  onTap: () => alTocar(insumos[i]),
-                  leading: CircleAvatar(
-                    backgroundColor: insumos[i].bajoMinimo
-                        ? Theme.of(context).colorScheme.errorContainer
-                        : Theme.of(context).colorScheme.primaryContainer,
-                    child: Text(insumos[i].nombre.substring(0, 1)),
-                  ),
-                  title: Text(insumos[i].nombre),
-                  subtitle: Text('Mínimo: ${insumos[i].minimo} ${insumos[i].unidad}'),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${insumos[i].cantidad}',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: insumos[i].bajoMinimo ? AppTheme.alerta : null,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      Text(insumos[i].unidad,
-                          style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                ),
+              child: _TarjetaInsumo(
+                insumo: insumos[i],
+                alTocar: () => alTocar(insumos[i]),
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Tarjeta crema con la cantidad grande y una barra de stock
+/// (la barra se llena respecto al doble del mínimo).
+class _TarjetaInsumo extends StatelessWidget {
+  final Insumo insumo;
+  final VoidCallback alTocar;
+
+  const _TarjetaInsumo({required this.insumo, required this.alTocar});
+
+  @override
+  Widget build(BuildContext context) {
+    final bajo = insumo.bajoMinimo;
+    final colorEstado = bajo ? AppTheme.alertaFuerte : AppTheme.dorado;
+
+    // Tope de la barra: el doble del mínimo (o la cantidad si es mayor)
+    var tope = insumo.minimo * 2;
+    if (insumo.cantidad > tope) tope = insumo.cantidad;
+    if (tope == 0) tope = 1;
+    final progreso = insumo.cantidad / tope;
+
+    return Card(
+      color: AppTheme.crema,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: alTocar,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Expanded(
+                    child: Text(
+                      insumo.nombre,
+                      style: const TextStyle(
+                        fontFamily: AppTheme.fuenteTitulos,
+                        fontVariations: AppTheme.negrita,
+                        fontSize: 19,
+                        color: AppTheme.espresso,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${insumo.cantidad}',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: bajo ? AppTheme.alertaFuerte : AppTheme.espresso,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    insumo.unidad,
+                    style: const TextStyle(color: AppTheme.cafeMedio),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: progreso > 1 ? 1.0 : progreso),
+                  duration: const Duration(milliseconds: 700),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, valor, _) => LinearProgressIndicator(
+                    value: valor,
+                    minHeight: 8,
+                    color: colorEstado,
+                    backgroundColor: const Color(0xFFE2D5C1),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    'Mínimo ${insumo.minimo}',
+                    style: const TextStyle(color: AppTheme.cafeMedio, fontSize: 13),
+                  ),
+                  const Spacer(),
+                  if (bajo) ...[
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 16, color: AppTheme.alertaFuerte),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'Bajo',
+                      style: TextStyle(
+                        color: AppTheme.alertaFuerte,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -301,7 +383,7 @@ class _NuevoInsumoDialogState extends State<_NuevoInsumoDialog> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<UbicacionInsumo>(
-                value: _ubicacion,
+                initialValue: _ubicacion,
                 decoration: const InputDecoration(labelText: 'Dónde se guarda'),
                 items: [
                   for (final u in UbicacionInsumo.values)
@@ -311,7 +393,7 @@ class _NuevoInsumoDialogState extends State<_NuevoInsumoDialog> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _unidad,
+                initialValue: _unidad,
                 decoration: const InputDecoration(labelText: 'Unidad'),
                 items: const [
                   DropdownMenuItem(value: 'botes', child: Text('Botes')),

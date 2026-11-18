@@ -30,7 +30,11 @@ En la barra se producen botes de plátano, piña, manzana y espinaca (nevera gra
 | Login biométrico | `services/auth_service.dart` (huella, rostro o PIN) |
 | Permisos negados | Mensajes claros con botón a Ajustes y opción de guardar sin ubicación |
 
-Extra: la app guarda la ubicación de la tienda y marca cada evidencia como **En tienda** si se tomó a menos de 150 m.
+Extras:
+- **Foto obligatoria** en cada registro de la bitácora y al cerrar un pendiente.
+- **Modo administrador** (PIN): solo el encargado puede borrar registros y pendientes.
+- **Diseño Café premium**: fondo espresso, tarjetas crema con barra de stock y títulos en Playfair Display.
+- La app guarda la ubicación de la tienda y marca cada evidencia como **En tienda** si se tomó a menos de 150 m.
 
 ## Arquitectura (por capas)
 

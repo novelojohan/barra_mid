@@ -50,3 +50,13 @@ Porque Google Maps necesita API key y cuenta de facturación. flutter_map usa Op
 
 **¿Qué le agregarías después?**
 Sincronizar varios celulares con Firebase para que toda la barra vea lo mismo, y notificaciones cuando un insumo baje del mínimo para pedir requisición
+
+**¿Cualquiera puede borrar registros?**
+No, el botón de borrar solo sale en modo administrador. Se entra desde el menú con un PIN que se crea la primera vez y lo guardo en la tabla config. Así un empleado no puede borrar la evidencia de lo que hizo
+
+**¿Por qué la foto es obligatoria?**
+Porque la idea es reemplazar los reportes de WhatsApp, y ahí siempre se manda foto. Si no hay foto no te deja guardar el registro ni cerrar el pendiente
+
+**¿Qué pasa si agregas un insumo nuevo como el Oreo y la app ya estaba instalada?**
+Subí la versión de la base de datos a 2 y en onUpgrade agrego el Oreo si no existe. Así no se borran los datos que ya tenían
+

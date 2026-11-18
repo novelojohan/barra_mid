@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/di/injector.dart';
 import '../../core/routes/app_routes.dart';
+import 'modo_admin.dart';
+import 'ui_feedback.dart';
 
 /// Menú lateral principal.
 ///
@@ -28,6 +30,7 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final empleado = Injector.instance.empleado;
+    final esAdmin = Injector.instance.esAdmin;
 
     return NavigationDrawer(
       selectedIndex: switch (rutaActual) {
@@ -59,7 +62,9 @@ class AppDrawer extends StatelessWidget {
                     ?.copyWith(color: tema.colorScheme.onPrimary),
               ),
               Text(
-                empleado.isEmpty ? 'Sin turno' : 'En turno: $empleado',
+                empleado.isEmpty
+                    ? 'Sin turno'
+                    : 'En turno: $empleado${esAdmin ? '  ·  ADMIN' : ''}',
                 style: TextStyle(color: tema.colorScheme.onPrimary),
               ),
             ],
@@ -98,10 +103,32 @@ class AppDrawer extends StatelessWidget {
         ),
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 28),
+          leading: Icon(
+            esAdmin
+                ? Icons.admin_panel_settings
+                : Icons.admin_panel_settings_outlined,
+            color: esAdmin ? tema.colorScheme.primary : null,
+          ),
+          title: Text(esAdmin ? 'Salir de modo admin' : 'Modo administrador'),
+          onTap: () async {
+            if (esAdmin) {
+              Injector.instance.esAdmin = false;
+              UiFeedback.exito(context, 'Saliste del modo administrador');
+              Navigator.pop(context);
+              return;
+            }
+            // El diálogo se abre encima del drawer; luego se cierra el drawer
+            await entrarModoAdmin(context);
+            if (context.mounted) Navigator.pop(context);
+          },
+        ),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 28),
           leading: const Icon(Icons.logout),
           title: const Text('Cerrar turno'),
           onTap: () {
             Injector.instance.empleado = '';
+            Injector.instance.esAdmin = false;
             // Limpia toda la pila y regresa al login
             Navigator.pushNamedAndRemoveUntil(
                 context, Rutas.login, (route) => false);

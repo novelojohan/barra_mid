@@ -41,11 +41,13 @@ class RegistroDetalleScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(registro.tipo.etiqueta),
         actions: [
-          IconButton(
-            tooltip: 'Eliminar',
-            onPressed: () => _eliminar(context),
-            icon: const Icon(Icons.delete_outline),
-          ),
+          // Solo el administrador puede borrar
+          if (Injector.instance.esAdmin)
+            IconButton(
+              tooltip: 'Eliminar',
+              onPressed: () => _eliminar(context),
+              icon: const Icon(Icons.delete_outline),
+            ),
         ],
       ),
       body: ListView(

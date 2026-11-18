@@ -106,8 +106,8 @@ class EtiquetaTienda extends StatelessWidget {
   Widget build(BuildContext context) {
     final (texto, icono, color) = switch (enTienda) {
       true => ('En tienda', Icons.verified, AppTheme.ok),
-      false => ('Fuera de tienda', Icons.warning_amber, Colors.orange.shade800),
-      null => ('Sin verificar', Icons.help_outline, Colors.grey.shade700),
+      false => ('Fuera de tienda', Icons.warning_amber, Colors.orange.shade300),
+      null => ('Sin verificar', Icons.help_outline, AppTheme.textoSuave),
     };
     if (soloIcono) {
       return Tooltip(message: texto, child: Icon(icono, size: 22, color: color));

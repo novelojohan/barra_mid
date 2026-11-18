@@ -11,7 +11,7 @@ class BarraMidApp extends StatelessWidget {
     return MaterialApp(
       title: 'Barra Mid',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.claro,
+      theme: AppTheme.oscuro,
       initialRoute: Rutas.login,
       onGenerateRoute: Rutas.generar,
     );

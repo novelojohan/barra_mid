@@ -145,6 +145,7 @@ class SqliteConfigRepository
   static const _empleado = 'ultimo_empleado';
   static const _tiendaLat = 'tienda_lat';
   static const _tiendaLng = 'tienda_lng';
+  static const _pinAdmin = 'pin_admin';
 
   Future<String?> _leer(String clave) async {
     final db = await _appDb.database;
@@ -188,4 +189,12 @@ class SqliteConfigRepository
         await _guardar(_tiendaLat, punto.latitud.toString());
         await _guardar(_tiendaLng, punto.longitud.toString());
       });
+
+  @override
+  Future<String?> obtenerPinAdmin() =>
+      ejecutarSeguro('No se pudo leer el PIN', () => _leer(_pinAdmin));
+
+  @override
+  Future<void> guardarPinAdmin(String pin) =>
+      ejecutarSeguro('No se pudo guardar el PIN', () => _guardar(_pinAdmin, pin));
 }
