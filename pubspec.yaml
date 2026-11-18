@@ -1,0 +1,42 @@
+name: barra_mid
+description: "Barra Mid - Inventario de producción, bitácora y pendientes con evidencia para la barra de Mid Market."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  # Los rangos permiten que pub elija la versión más nueva compatible
+  # con tu versión de Flutter (el código usa APIs que existen en ambas).
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Persistencia local (SQLite)
+  sqflite: ^2.4.1
+  path: ^1.9.0
+  path_provider: ^2.1.5
+
+  # Gadget: Multimedia (cámara y galería) para evidencias
+  image_picker: ^1.1.2
+
+  # Gadget: Audio y dictado (voz a texto)
+  speech_to_text: ^7.0.0
+
+  # Gadget: Geolocalización y mapas
+  geolocator: '>=13.0.2 <15.0.0'
+  flutter_map: '>=7.0.2 <9.0.0'
+  latlong2: ^0.9.1
+  url_launcher: ^6.3.1
+
+  # Login biométrico (huella / rostro / PIN del celular)
+  local_auth: '>=2.3.0 <4.0.0'
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: '>=4.0.0 <7.0.0'
+
+flutter:
+  uses-material-design: true

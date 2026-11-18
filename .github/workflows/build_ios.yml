@@ -1,0 +1,64 @@
+# Compila la app para iPhone en una Mac de GitHub (no necesitas Mac).
+# Resultado: un archivo BarraMid.ipa para instalar con Sideloadly desde Windows.
+#
+# Cómo usarlo: en GitHub entra a tu repo → pestaña Actions →
+# "Compilar iPhone (.ipa)" → Run workflow. Al terminar (~10-15 min)
+# descarga el artefacto "BarraMid-ipa" al final de la página.
+
+name: Compilar iPhone (.ipa)
+
+on:
+  workflow_dispatch:   # botón manual "Run workflow"
+  push:
+    branches: [main]
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # Genera la carpeta ios/ si no está en el repo (no sobrescribe nada)
+      - name: Preparar proyecto iOS
+        run: flutter create --org com.johan --project-name barra_mid --platforms ios .
+
+      # Permisos que iOS exige para cámara, micrófono, voz, GPS y Face ID
+      - name: Agregar permisos al Info.plist
+        run: |
+          PLIST=ios/Runner/Info.plist
+          poner() {
+            /usr/libexec/PlistBuddy -c "Add :$1 string $2" "$PLIST" 2>/dev/null \
+              || /usr/libexec/PlistBuddy -c "Set :$1 $2" "$PLIST"
+          }
+          poner NSCameraUsageDescription "Para tomar fotos de evidencia"
+          poner NSPhotoLibraryUsageDescription "Para elegir fotos de evidencia"
+          poner NSMicrophoneUsageDescription "Para dictar notas"
+          poner NSSpeechRecognitionUsageDescription "Para convertir tu voz a texto"
+          poner NSLocationWhenInUseUsageDescription "Para registrar donde se hizo cada movimiento"
+          poner NSFaceIDUsageDescription "Para iniciar turno de forma segura"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Barra Mid" "$PLIST" || true
+
+      - name: Dependencias
+        run: flutter pub get
+
+      # Se compila SIN firma; Sideloadly la firma con tu Apple ID
+      - name: Compilar (release, sin firma)
+        run: flutter build ios --release --no-codesign
+
+      - name: Empaquetar .ipa
+        run: |
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qr BarraMid.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BarraMid-ipa
+          path: BarraMid.ipa
+          retention-days: 14
