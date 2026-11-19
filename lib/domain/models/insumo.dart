@@ -1,4 +1,5 @@
-/// Lugar físico donde se guarda un insumo dentro de la barra.
+/// Dónde está guardado el insumo. Es un enum: una lista fija de opciones.
+/// Cada opción tiene una clave (lo que guardo en la base) y una etiqueta (lo que ve el usuario)
 enum UbicacionInsumo {
   neveraGrande('nevera_grande', 'Nevera grande'),
   neveraChica('nevera_chica', 'Nevera chica'),
@@ -6,30 +7,33 @@ enum UbicacionInsumo {
 
   const UbicacionInsumo(this.clave, this.etiqueta);
 
-  /// Valor que se guarda en SQLite.
+  /// Ej. 'nevera_grande' (así se guarda en SQLite)
   final String clave;
 
-  /// Texto que ve el usuario.
+  /// Ej. 'Nevera grande' (así se ve en la pantalla)
   final String etiqueta;
 
+  // Convierte el texto de la base de vuelta a la opción del enum
   static UbicacionInsumo desdeClave(String clave) => values.firstWhere(
         (u) => u.clave == clave,
         orElse: () => UbicacionInsumo.barra,
       );
 }
 
-/// Un insumo del inventario: bote de plátano, bolsa de hielo,
-/// bote preparado de Green Goodness, etc.
+/// Modelo de un insumo: un bote de plátano, una bolsa de hielo,
+/// un bote de Green Goodness, etc.
+/// Un modelo es solo una clase con los datos, como una "ficha".
 class Insumo {
+  // id lo pone SQLite solo (por eso es int? = puede ser null antes de guardar)
   final int? id;
   final String nombre;
   final UbicacionInsumo ubicacion;
 
-  /// "botes" o "bolsas".
+  /// botes o bolsas
   final String unidad;
   final int cantidad;
 
-  /// Si la cantidad baja de este número se marca en rojo.
+  /// Si hay menos que esto, la tarjeta se pone en rojo
   final int minimo;
 
   const Insumo({
@@ -41,9 +45,11 @@ class Insumo {
     required this.minimo,
   });
 
-  /// true cuando hay que avisar que ya se está acabando.
+  /// true si ya se está acabando (hay menos del mínimo)
   bool get bajoMinimo => cantidad < minimo;
 
+  // copyWith crea una copia cambiando solo lo que le paso.
+  // Los campos son final (no se pueden cambiar), por eso hago copias
   Insumo copyWith({int? id, int? cantidad, int? minimo}) => Insumo(
         id: id ?? this.id,
         nombre: nombre,
@@ -53,7 +59,9 @@ class Insumo {
         minimo: minimo ?? this.minimo,
       );
 
+  // Convierte el insumo a un Map para guardarlo en SQLite (cada llave = una columna)
   Map<String, Object?> toMap() => {
+        // Si todavía no tiene id no lo mando, SQLite lo genera
         if (id != null) 'id': id,
         'nombre': nombre,
         'ubicacion': ubicacion.clave,
@@ -62,6 +70,7 @@ class Insumo {
         'minimo': minimo,
       };
 
+  // Lo contrario: de una fila de SQLite armo el objeto Insumo
   factory Insumo.fromMap(Map<String, Object?> map) => Insumo(
         id: map['id'] as int?,
         nombre: map['nombre'] as String,

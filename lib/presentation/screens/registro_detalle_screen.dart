@@ -7,11 +7,13 @@ import '../widgets/foto_archivo.dart';
 import '../widgets/ubicacion_mapa.dart';
 import '../widgets/ui_feedback.dart';
 
-/// Vista de detalle de un registro: foto, insumos, nota y mapa.
+/// Detalle de un registro: foto grande, insumos, nota, quién y cuándo, y el mapa.
+/// Es StatelessWidget porque solo enseña datos, no cambia.
 class RegistroDetalleScreen extends StatelessWidget {
   final Registro registro;
   const RegistroDetalleScreen({super.key, required this.registro});
 
+  // Borrar (solo lo ve el admin). Primero pregunta si está seguro
   Future<void> _eliminar(BuildContext context) async {
     final confirmar = await UiFeedback.confirmar(
       context,
@@ -23,10 +25,11 @@ class RegistroDetalleScreen extends StatelessWidget {
     if (!confirmar || !context.mounted) return;
 
     try {
+      // Borro el registro (esto regresa las cantidades del inventario) y luego la foto
       await Injector.instance.registros.eliminarRegistro(registro);
       await Injector.instance.media.eliminarFoto(registro.fotoPath);
       if (!context.mounted) return;
-      Navigator.pop(context, true); // true = la lista debe recargarse
+      Navigator.pop(context, true); // true = avisa a la lista que se recargue
     } catch (e) {
       if (context.mounted) UiFeedback.error(context, e);
     }
@@ -41,7 +44,7 @@ class RegistroDetalleScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(registro.tipo.etiqueta),
         actions: [
-          // Solo el administrador puede borrar
+          // El botón de borrar solo aparece en modo admin
           if (Injector.instance.esAdmin)
             IconButton(
               tooltip: 'Eliminar',
@@ -54,6 +57,7 @@ class RegistroDetalleScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           if (registro.fotoPath != null)
+            // El mismo tag que en la lista, así Flutter anima la foto entre pantallas
             Hero(
               tag: 'registro-${registro.id}',
               child: FotoArchivo(
@@ -97,6 +101,7 @@ class RegistroDetalleScreen extends StatelessWidget {
           Text('Ubicación', style: tema.textTheme.titleSmall),
           const SizedBox(height: 8),
           if (registro.ubicacion != null)
+            // Mapa con el punto donde se guardó y botón a Google Maps
             UbicacionMapa(
               punto: registro.ubicacion!,
               enTienda: registro.enTienda,

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../core/errors/app_exception.dart';
 
-/// Indicador de carga centrado (para FutureBuilder).
+/// Pantallitas reutilizables para los 3 estados del FutureBuilder:
+/// cargando, error y vacío. Así todas las pantallas se ven igual.
+///
+/// Esta es la de "cargando": el circulito que gira (CircularProgressIndicator).
 class CargandoVista extends StatelessWidget {
   final String mensaje;
   const CargandoVista({super.key, this.mensaje = 'Cargando…'});
@@ -22,7 +25,7 @@ class CargandoVista extends StatelessWidget {
   }
 }
 
-/// Vista de error con botón de reintentar (en lugar de pantalla roja).
+/// Cuando algo falla: ícono, mensaje y botón de Reintentar (en lugar de la pantalla roja)
 class ErrorVista extends StatelessWidget {
   final Object? error;
   final VoidCallback alReintentar;
@@ -30,6 +33,7 @@ class ErrorVista extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Si es uno de mis errores uso su mensaje, si no, uno general
     final mensaje = error is AppException
         ? (error as AppException).message
         : 'Algo salió mal al cargar la información.';
@@ -56,7 +60,7 @@ class ErrorVista extends StatelessWidget {
   }
 }
 
-/// Vista cuando una lista está vacía.
+/// Cuando una lista no tiene nada, ej. "Aún no hay registros"
 class VacioVista extends StatelessWidget {
   final IconData icono;
   final String mensaje;
@@ -80,8 +84,8 @@ class VacioVista extends StatelessWidget {
   }
 }
 
-/// Animación de entrada para elementos de lista (aparecen deslizándose
-/// con un pequeño retraso según su posición).
+/// Animación para las listas: cada tarjeta aparece y sube un poquito.
+/// Las de abajo tardan un poco más, por eso se ve que van entrando en orden.
 class AparicionAnimada extends StatelessWidget {
   final int indice;
   final Widget child;
@@ -89,7 +93,10 @@ class AparicionAnimada extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Entre más abajo esté la tarjeta (indice), más tarda, hasta un máximo
     final duracion = 250 + (indice > 8 ? 8 : indice) * 60;
+    // TweenAnimationBuilder anima un número de 0 a 1.
+    // Con ese número cambio la opacidad (aparece) y la posición (sube)
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: Duration(milliseconds: duracion),

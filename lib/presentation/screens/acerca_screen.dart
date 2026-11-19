@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Información de la app y el problema que resuelve.
+/// Pantalla de "Acerca de": qué problema resuelve la app y qué usa
 class AcercaScreen extends StatelessWidget {
   const AcercaScreen({super.key});
 

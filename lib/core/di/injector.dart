@@ -7,24 +7,29 @@ import '../../services/media_service.dart';
 import '../../services/speech_service.dart';
 import '../../services/verificador_tienda.dart';
 
-/// Contenedor de dependencias (Service Locator sencillo).
+/// El Injector es como la "caja" donde creo todos los repositorios y servicios.
 ///
-/// Aquí es el ÚNICO lugar donde se decide qué implementación concreta se
-/// usa. Las pantallas piden la abstracción (ej. [RegistroRepository]) y no
-/// saben que por dentro es SQLite.
+/// Es el ÚNICO lugar donde digo "el repositorio es de SQLite" o "el GPS es
+/// geolocator". Las pantallas solo piden, por ejemplo, Injector.instance.registros,
+/// y no saben que por dentro es SQLite. Si mañana lo cambio a Firebase,
+/// solo cambio esta clase y las pantallas ni se enteran (la D de SOLID).
 class Injector {
+  // Constructor privado: nadie más puede crear otro Injector
   Injector._();
+  // La única copia que usa toda la app (singleton)
   static final Injector instance = Injector._();
 
+  // late = se crea hasta la primera vez que se usa, no al abrir la app.
+  // La base de datos es una sola y la comparten todos los repositorios
   late final AppDatabase _db = AppDatabase();
 
-  // Repositorios
+  // Repositorios: el tipo de la izquierda es la interfaz, el de la derecha la clase real
   late final InventarioRepository inventario = SqliteInventarioRepository(_db);
   late final RegistroRepository registros = SqliteRegistroRepository(_db);
   late final PendienteRepository pendientes = SqlitePendienteRepository(_db);
   late final ConfigRepository config = SqliteConfigRepository(_db);
 
-  // Servicios de hardware
+  // Servicios que usan el hardware del celular
   late final AuthService auth = BiometricAuthService();
   late final MediaService media = ImagePickerMediaService();
   late final SpeechService voz = SpeechToTextService();
@@ -33,10 +38,10 @@ class Injector {
   late final VerificadorTienda verificadorTienda =
       VerificadorTienda(ubicacion, config);
 
-  /// Nombre de quien está en turno (se pide en el login).
+  /// Quién está en turno. Se llena en el login y se guarda en cada registro
   String empleado = '';
 
-  /// true cuando se entró al modo administrador con el PIN.
-  /// Solo en modo admin se pueden borrar registros y pendientes.
+  /// Si está activo el modo administrador (se entra con PIN).
+  /// Solo en modo admin se ven los botones de borrar y se puede cambiar el mínimo
   bool esAdmin = false;
 }

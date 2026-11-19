@@ -14,10 +14,13 @@ import '../../presentation/screens/registro_detalle_screen.dart';
 import '../../presentation/screens/registro_form_screen.dart';
 import '../../presentation/screens/tienda_screen.dart';
 
-/// Rutas con nombre de toda la app (Named Routes).
+/// Aquí están todas las rutas (pantallas) de la app con su nombre.
+/// En vez de escribir la pantalla cada vez que navego, uso el nombre,
+/// ej. Navigator.pushNamed(context, Rutas.bitacora)
 class Rutas {
   Rutas._();
 
+  // El nombre de cada pantalla
   static const login = '/';
   static const inventario = '/inventario';
   static const bitacora = '/bitacora';
@@ -30,10 +33,12 @@ class Rutas {
   static const tienda = '/tienda';
   static const acerca = '/acerca';
 
-  /// Construye cada pantalla según el nombre de la ruta y le pone una
-  /// transición suave (fade + slide).
+  /// Esta función se llama cada vez que navego a una ruta.
+  /// Según el nombre, decide qué pantalla mostrar y le pone una animación
+  /// de entrada (aparece y sube un poquito).
   static Route<dynamic> generar(RouteSettings settings) {
     final Widget pantalla;
+    // Reviso el nombre de la ruta para saber qué pantalla crear
     switch (settings.name) {
       case login:
         pantalla = const LoginScreen();
@@ -43,6 +48,8 @@ class Rutas {
         pantalla = const BitacoraScreen();
       case registroNuevo:
         pantalla = const RegistroFormScreen();
+      // Las pantallas de detalle necesitan saber QUÉ registro mostrar,
+      // eso viene en settings.arguments (lo mando al hacer pushNamed)
       case registroDetalle:
         pantalla = RegistroDetalleScreen(registro: settings.arguments as Registro);
       case pendientes:
@@ -59,17 +66,21 @@ class Rutas {
         pantalla = const TiendaScreen();
       case acerca:
         pantalla = const AcercaScreen();
+      // Por si alguien navega a una ruta que no existe
       default:
         pantalla = const Scaffold(
           body: Center(child: Text('Pantalla no encontrada')),
         );
     }
 
+    // PageRouteBuilder me deja hacer mi propia animación de transición
     return PageRouteBuilder(
       settings: settings,
       transitionDuration: const Duration(milliseconds: 350),
       reverseTransitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) => pantalla,
+      // animation va de 0 a 1 mientras dura la transición.
+      // Con eso hago que la pantalla aparezca (Fade) y suba un poco (Slide)
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         final curva =
             CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);

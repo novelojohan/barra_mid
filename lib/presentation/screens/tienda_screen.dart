@@ -7,8 +7,8 @@ import '../widgets/estados_vista.dart';
 import '../widgets/ubicacion_mapa.dart';
 import '../widgets/ui_feedback.dart';
 
-/// Configura la ubicación de Mid Market. Con ella la app sabe si una
-/// evidencia se tomó dentro de la tienda (radio de 150 m).
+/// Aquí se guarda la ubicación de Mid Market. Con eso la app sabe si
+/// una foto de evidencia se tomó dentro de la tienda (a menos de 150 m).
 class TiendaScreen extends StatefulWidget {
   const TiendaScreen({super.key});
 
@@ -18,6 +18,7 @@ class TiendaScreen extends StatefulWidget {
 
 class _TiendaScreenState extends State<TiendaScreen> {
   final _di = Injector.instance;
+  // GeoPunto? porque puede que todavía no se haya guardado (null)
   late Future<GeoPunto?> _tiendaFuture;
   bool _guardando = false;
 
@@ -27,6 +28,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
     _tiendaFuture = _di.config.obtenerUbicacionTienda();
   }
 
+  // Toma tu GPS ahorita y lo guarda como la ubicación de la tienda
   Future<void> _usarUbicacionActual() async {
     setState(() => _guardando = true);
     try {
@@ -46,12 +48,16 @@ class _TiendaScreenState extends State<TiendaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Ubicación de la tienda')),
+      // FutureBuilder: espera la respuesta de la base de datos y según el estado
+      // enseña algo distinto: cargando, error o ya los datos
       body: FutureBuilder<GeoPunto?>(
         future: _tiendaFuture,
         builder: (context, snapshot) {
+          // Todavía no llega la respuesta: circulito de carga
           if (snapshot.connectionState != ConnectionState.done) {
             return const CargandoVista();
           }
+          // Algo falló: mensaje y botón de reintentar
           if (snapshot.hasError) {
             return ErrorVista(
               error: snapshot.error,
@@ -71,7 +77,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
               const SizedBox(height: 16),
               if (tienda != null)
                 UbicacionMapa(
-                  key: ValueKey(tienda.texto), // Recrea el mapa si cambia
+                  // La key hace que el mapa se vuelva a crear si cambia la ubicación
+                  key: ValueKey(tienda.texto),
                   punto: tienda,
                   enTienda: true,
                   altura: 260,

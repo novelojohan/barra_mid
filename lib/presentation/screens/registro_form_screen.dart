@@ -9,8 +9,9 @@ import '../widgets/foto_evidencia_field.dart';
 import '../widgets/ubicacion_helper.dart';
 import '../widgets/ui_feedback.dart';
 
-/// Formulario para crear un registro de la bitácora.
-/// Usa los 3 gadgets: cámara/galería, micrófono (dictado) y GPS.
+/// Formulario para un registro nuevo de la bitácora.
+/// Aquí se usan los 3 gadgets: cámara/galería (foto), micrófono (nota
+/// dictada) y GPS (se toma solo al guardar).
 class RegistroFormScreen extends StatefulWidget {
   const RegistroFormScreen({super.key});
 
@@ -20,15 +21,19 @@ class RegistroFormScreen extends StatefulWidget {
 
 class _RegistroFormScreenState extends State<RegistroFormScreen> {
   final _di = Injector.instance;
+  // Controller de la nota (ahí también escribe el dictado)
   final _notaCtrl = TextEditingController();
   late final Future<List<Insumo>> _insumosFuture;
 
+  // Por defecto empieza en Producción / relleno
   TipoRegistro _tipo = TipoRegistro.produccion;
 
-  /// insumoId -> cantidad elegida
+  /// Map para guardar cuántos botes eligió de cada insumo.
+  /// La llave es el id del insumo y el valor la cantidad
   final Map<int, int> _cantidades = {};
   String? _fotoPath;
   bool _guardando = false;
+  // Para saber si se guardó; si no, al salir borro la foto
   bool _guardado = false;
 
   @override
@@ -40,13 +45,13 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
   @override
   void dispose() {
     _notaCtrl.dispose();
-    // Si salió sin guardar, borramos la foto para no dejar basura
+    // Si se salió sin guardar, borro la foto para no dejar basura en el celular
     if (!_guardado) _di.media.eliminarFoto(_fotoPath);
     super.dispose();
   }
 
-  /// Producción muestra nevera grande y secos; preparados solo la
-  /// nevera chica; salida y merma muestran todo.
+  /// Según el tipo, enseño solo los insumos que tienen sentido:
+  /// producción = nevera grande y secos, mixes = nevera chica, salida y merma = todos
   List<Insumo> _filtrar(List<Insumo> insumos) => switch (_tipo) {
         TipoRegistro.produccion => insumos
             .where((i) => i.ubicacion != UbicacionInsumo.neveraChica)
@@ -57,7 +62,9 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
         _ => insumos,
       };
 
+  // Se llama al tocar "Guardar registro"
   Future<void> _guardar(List<Insumo> insumos) async {
+    // Armo la lista solo con los insumos que tienen cantidad mayor a 0
     final items = [
       for (final insumo in _filtrar(insumos))
         if ((_cantidades[insumo.id] ?? 0) > 0)
@@ -73,15 +80,16 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
       UiFeedback.exito(context, 'Marca al menos un insumo con cantidad');
       return;
     }
-    // La foto de evidencia es obligatoria en todos los registros
+    // La foto es obligatoria: sin foto no deja guardar (igual que en WhatsApp siempre se mandaba)
     if (_fotoPath == null) {
       UiFeedback.exito(context, 'Toma la foto de evidencia para poder guardar');
       return;
     }
 
+    // Pongo el botón en "Guardando..." para que no le den doble clic
     setState(() => _guardando = true);
 
-    // GPS al momento de guardar
+    // Tomo el GPS justo al guardar. Si falla, el helper le pregunta qué hacer
     final ubicacion = await obtenerUbicacionParaGuardar(context);
     if (ubicacion.cancelado) {
       if (mounted) setState(() => _guardando = false);
@@ -89,6 +97,7 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
     }
 
     try {
+      // Creo el Registro y lo guardo (esto también actualiza el inventario)
       await _di.registros.guardarRegistro(Registro(
         tipo: _tipo,
         items: items,
@@ -102,6 +111,7 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
       _guardado = true;
       if (!mounted) return;
       UiFeedback.exito(context, 'Registro guardado');
+      // Regreso a la pantalla anterior avisando (true) que sí se guardó
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
@@ -115,12 +125,16 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Nuevo registro')),
+      // FutureBuilder: espera la respuesta de la base de datos y según el estado
+      // enseña algo distinto: cargando, error o ya los datos
       body: FutureBuilder<List<Insumo>>(
         future: _insumosFuture,
         builder: (context, snapshot) {
+          // Todavía no llega la respuesta: circulito de carga
           if (snapshot.connectionState != ConnectionState.done) {
             return const CargandoVista();
           }
+          // Algo falló: mensaje y botón de reintentar
           if (snapshot.hasError) {
             return ErrorVista(
               error: snapshot.error,
@@ -143,6 +157,7 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                     runSpacing: 4,
                     children: [
                       for (final t in TipoRegistro.values)
+                        // Los botoncitos para elegir el tipo de registro
                         ChoiceChip(
                           label: Text(t.etiqueta),
                           selected: _tipo == t,
@@ -158,6 +173,7 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
                     child: Column(
                       children: [
                         for (final insumo in visibles)
+                          // Un renglón con - y + por cada insumo
                           _ContadorInsumo(
                             insumo: insumo,
                             cantidad: _cantidades[insumo.id] ?? 0,
@@ -223,7 +239,7 @@ class _RegistroFormScreenState extends State<RegistroFormScreen> {
   }
 }
 
-/// Fila con botones - y + para elegir cuántos botes/bolsas.
+/// Renglón de un insumo con botones - y + para elegir cuántos
 class _ContadorInsumo extends StatelessWidget {
   final Insumo insumo;
   final int cantidad;

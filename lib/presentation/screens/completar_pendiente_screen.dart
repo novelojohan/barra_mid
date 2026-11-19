@@ -7,8 +7,8 @@ import '../widgets/foto_evidencia_field.dart';
 import '../widgets/ubicacion_helper.dart';
 import '../widgets/ui_feedback.dart';
 
-/// Marcar un pendiente como hecho subiendo la foto de evidencia
-/// (lo que antes se mandaba por WhatsApp).
+/// Pantalla para terminar un pendiente: hay que subir la foto de evidencia
+/// (lo que antes se mandaba por WhatsApp). También se puede dictar un comentario.
 class CompletarPendienteScreen extends StatefulWidget {
   final Pendiente pendiente;
   const CompletarPendienteScreen({super.key, required this.pendiente});
@@ -28,17 +28,20 @@ class _CompletarPendienteScreenState extends State<CompletarPendienteScreen> {
   @override
   void dispose() {
     _notaCtrl.dispose();
+    // Si se salió sin guardar, borro la foto
     if (!_guardado) _di.media.eliminarFoto(_fotoPath);
     super.dispose();
   }
 
   Future<void> _guardar() async {
+    // Sin foto no se puede marcar como hecho
     if (_fotoPath == null) {
       UiFeedback.exito(context, 'La foto de evidencia es obligatoria');
       return;
     }
     setState(() => _guardando = true);
 
+    // Tomo el GPS para saber si la foto se tomó en la tienda
     final ubicacion = await obtenerUbicacionParaGuardar(context);
     if (ubicacion.cancelado) {
       if (mounted) setState(() => _guardando = false);
@@ -46,6 +49,7 @@ class _CompletarPendienteScreenState extends State<CompletarPendienteScreen> {
     }
 
     try {
+      // Creo la copia del pendiente ya completado y la guardo
       await _di.pendientes.marcarComoHecho(widget.pendiente.completar(
         empleado: _di.empleado,
         evidenciaPath: _fotoPath!,

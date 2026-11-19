@@ -9,7 +9,8 @@ import '../widgets/estados_vista.dart';
 import '../widgets/foto_archivo.dart';
 import '../widgets/ubicacion_mapa.dart';
 
-/// Pendientes de la barra divididos en "Por hacer" y "Hechos".
+/// Pendientes de la barra en 2 pestañas: "Por hacer" y "Hechos".
+/// Los por hacer tienen un botón "Hecho" que pide la foto de evidencia.
 class PendientesScreen extends StatefulWidget {
   const PendientesScreen({super.key});
 
@@ -19,6 +20,7 @@ class PendientesScreen extends StatefulWidget {
 
 class _PendientesScreenState extends State<PendientesScreen> {
   final _repo = Injector.instance.pendientes;
+  // Guardo el Future para no repetir la consulta
   late Future<List<Pendiente>> _pendientesFuture;
 
   @override
@@ -31,6 +33,7 @@ class _PendientesScreenState extends State<PendientesScreen> {
     setState(() => _pendientesFuture = _repo.obtenerPendientes());
   }
 
+  // Abre otra pantalla y si regresa true, recargo la lista
   Future<void> _abrir(String ruta, {Object? argumento}) async {
     final cambio = await Navigator.pushNamed(context, ruta, arguments: argumento);
     if (cambio == true) _recargar();
@@ -53,16 +56,21 @@ class _PendientesScreenState extends State<PendientesScreen> {
           icon: const Icon(Icons.add_task),
           label: const Text('Nuevo pendiente'),
         ),
+        // FutureBuilder: espera la respuesta de la base de datos y según el estado
+        // enseña algo distinto: cargando, error o ya los datos
         body: FutureBuilder<List<Pendiente>>(
           future: _pendientesFuture,
           builder: (context, snapshot) {
+            // Todavía no llega la respuesta: circulito de carga
             if (snapshot.connectionState != ConnectionState.done) {
               return const CargandoVista(mensaje: 'Cargando pendientes…');
             }
+            // Algo falló: mensaje y botón de reintentar
             if (snapshot.hasError) {
               return ErrorVista(error: snapshot.error, alReintentar: _recargar);
             }
             final todos = snapshot.data ?? [];
+            // Separo los pendientes en 2 listas: los que faltan y los hechos
             final porHacer = todos.where((p) => !p.hecho).toList();
             final hechos = todos.where((p) => p.hecho).toList();
 
@@ -116,6 +124,7 @@ class _PendientesScreenState extends State<PendientesScreen> {
   }
 }
 
+// Un ícono según el área (cafetera para la Breville/Franke, nevera, etc.)
 IconData iconoArea(String area) => switch (area) {
       'Breville' || 'Franke' => Icons.coffee_maker_outlined,
       'Nevera grande' || 'Nevera chica' => Icons.kitchen_outlined,
@@ -123,6 +132,7 @@ IconData iconoArea(String area) => switch (area) {
       _ => Icons.cleaning_services_outlined,
     };
 
+// Tarjeta de un pendiente que falta hacer
 class _TarjetaPorHacer extends StatelessWidget {
   final Pendiente pendiente;
   final VoidCallback alTocar;
@@ -152,6 +162,7 @@ class _TarjetaPorHacer extends StatelessWidget {
   }
 }
 
+// Tarjeta de un pendiente ya hecho, con la foto de evidencia
 class _TarjetaHecho extends StatelessWidget {
   final Pendiente pendiente;
   final VoidCallback alTocar;
@@ -168,6 +179,7 @@ class _TarjetaHecho extends StatelessWidget {
           padding: const EdgeInsets.all(10),
           child: Row(
             children: [
+              // Hero con tag 'pendiente-' + id, igual que en el detalle
               Hero(
                 tag: 'pendiente-${pendiente.id}',
                 child: FotoArchivo(

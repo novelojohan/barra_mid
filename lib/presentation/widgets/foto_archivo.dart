@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-/// Muestra una foto guardada en el celular. Si no existe o se borró,
-/// muestra un ícono en lugar de tronar.
+/// Muestra una foto guardada en el celular.
+/// Si la foto ya no existe, enseña un ícono en vez de que la app truene.
 class FotoArchivo extends StatelessWidget {
   final String? ruta;
   final double? width;
@@ -22,6 +22,7 @@ class FotoArchivo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Lo que se ve cuando no hay foto
     final placeholder = Container(
       width: width,
       height: height,
@@ -33,11 +34,13 @@ class FotoArchivo extends StatelessWidget {
       borderRadius: BorderRadius.circular(radio),
       child: ruta == null
           ? placeholder
+          // Image.file lee la foto desde la ruta del celular
           : Image.file(
               File(ruta!),
               width: width,
               height: height,
               fit: BoxFit.cover,
+              // Si no la puede leer, enseña el placeholder
               errorBuilder: (context, error, stack) => placeholder,
             ),
     );

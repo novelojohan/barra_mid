@@ -4,7 +4,8 @@ import '../../core/di/injector.dart';
 import '../../services/speech_service.dart';
 import 'ui_feedback.dart';
 
-/// Campo de texto con botón de micrófono para dictar en lugar de escribir.
+/// Campo de texto con un botón de micrófono para dictar en vez de escribir.
+/// Es StatefulWidget porque cambia: el botón se pone rojo mientras escucha.
 class DictadoTextField extends StatefulWidget {
   final TextEditingController controller;
   final String etiqueta;
@@ -24,12 +25,16 @@ class DictadoTextField extends StatefulWidget {
 }
 
 class _DictadoTextFieldState extends State<DictadoTextField> {
+  // Pido el servicio de voz al Injector
   final SpeechService _voz = Injector.instance.voz;
+  // true mientras está grabando (para cambiar el botón)
   bool _escuchando = false;
 
-  /// Texto que ya estaba escrito antes de empezar a dictar.
+  /// Lo que ya estaba escrito antes de dictar. Así lo dictado se agrega
+  /// al final y no borra lo que ya habías escrito
   String _textoBase = '';
 
+  // Se llama al tocar el micrófono: si está escuchando lo para, si no, empieza
   Future<void> _alternarDictado() async {
     if (_escuchando) {
       await _voz.detener();
@@ -38,14 +43,17 @@ class _DictadoTextFieldState extends State<DictadoTextField> {
     }
 
     _textoBase = widget.controller.text.trim();
+    // Cuando el micrófono deja de escuchar solo (te quedaste callado), actualizo el botón
     _voz.alCambiarEstado = (escuchando) {
       if (mounted) setState(() => _escuchando = escuchando);
     };
 
     try {
+      // Cada vez que reconoce palabras, pongo el texto en el campo
       await _voz.escuchar((texto, esFinal) {
         final separador = _textoBase.isEmpty ? '' : ' ';
         widget.controller.text = '$_textoBase$separador$texto';
+        // Muevo el cursor al final del texto
         widget.controller.selection = TextSelection.collapsed(
           offset: widget.controller.text.length,
         );
@@ -60,6 +68,7 @@ class _DictadoTextFieldState extends State<DictadoTextField> {
   }
 
   @override
+  // Al salir de la pantalla apago el micrófono para que no se quede grabando
   void dispose() {
     if (_escuchando) _voz.detener();
     _voz.alCambiarEstado = null;
@@ -83,6 +92,7 @@ class _DictadoTextFieldState extends State<DictadoTextField> {
             border: const OutlineInputBorder(),
             suffixIcon: Padding(
               padding: const EdgeInsets.all(4),
+              // AnimatedContainer: el círculo cambia de color suavecito (rojo = grabando)
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 decoration: BoxDecoration(
@@ -94,6 +104,7 @@ class _DictadoTextFieldState extends State<DictadoTextField> {
                 child: IconButton(
                   tooltip: _escuchando ? 'Detener dictado' : 'Dictar',
                   onPressed: _alternarDictado,
+                  // AnimatedSwitcher: cambia el ícono de micrófono a "stop" con animación
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
@@ -109,6 +120,7 @@ class _DictadoTextFieldState extends State<DictadoTextField> {
             ),
           ),
         ),
+        // Aparece el texto "Escuchando..." solo mientras graba
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
           child: _escuchando

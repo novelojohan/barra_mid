@@ -5,22 +5,24 @@ import '../../core/routes/app_routes.dart';
 import 'modo_admin.dart';
 import 'ui_feedback.dart';
 
-/// Menú lateral principal.
+/// El menú lateral (Drawer) que sale con el botón ☰.
 ///
-/// Las secciones principales usan pushReplacementNamed para que la pila
-/// de navegación no crezca cada vez que cambias de sección (así el botón
-/// "atrás" no te regresa infinitamente).
+/// Para las 3 secciones principales uso pushReplacementNamed: reemplaza
+/// la pantalla actual en vez de apilar otra encima. Así si cambias muchas
+/// veces de sección, el botón de atrás no te regresa por todas.
 class AppDrawer extends StatelessWidget {
+  // Para saber en qué sección estoy y marcarla en el menú
   final String rutaActual;
   const AppDrawer({super.key, required this.rutaActual});
 
   void _irASeccion(BuildContext context, String ruta) {
-    Navigator.pop(context); // Cierra el drawer
+    Navigator.pop(context); // Primero cierro el menú
     if (ruta != rutaActual) {
       Navigator.pushReplacementNamed(context, ruta);
     }
   }
 
+  // Para pantallas secundarias (tienda, acerca de) sí apilo, para poder regresar
   void _abrir(BuildContext context, String ruta) {
     Navigator.pop(context);
     Navigator.pushNamed(context, ruta);
@@ -32,7 +34,9 @@ class AppDrawer extends StatelessWidget {
     final empleado = Injector.instance.empleado;
     final esAdmin = Injector.instance.esAdmin;
 
+    // NavigationDrawer es el Drawer de Material 3
     return NavigationDrawer(
+      // Marca cuál de las 3 secciones está activa
       selectedIndex: switch (rutaActual) {
         Rutas.inventario => 0,
         Rutas.bitacora => 1,
@@ -117,7 +121,7 @@ class AppDrawer extends StatelessWidget {
               Navigator.pop(context);
               return;
             }
-            // El diálogo se abre encima del drawer; luego se cierra el drawer
+            // Si no está en modo admin, abro el diálogo del PIN y después cierro el menú
             await entrarModoAdmin(context);
             if (context.mounted) Navigator.pop(context);
           },
@@ -129,7 +133,8 @@ class AppDrawer extends StatelessWidget {
           onTap: () {
             Injector.instance.empleado = '';
             Injector.instance.esAdmin = false;
-            // Limpia toda la pila y regresa al login
+            // Cerrar turno: borra toda la pila de pantallas y regresa al login.
+            // Así nadie puede darle "atrás" y volver a entrar sin huella
             Navigator.pushNamedAndRemoveUntil(
                 context, Rutas.login, (route) => false);
           },

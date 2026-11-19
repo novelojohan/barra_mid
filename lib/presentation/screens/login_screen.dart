@@ -5,8 +5,8 @@ import '../../core/routes/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../widgets/ui_feedback.dart';
 
-/// Inicio de turno: el empleado escribe su nombre y se autentica con
-/// huella (o PIN del celular).
+/// Pantalla de inicio de turno: el empleado escribe su nombre y pone su huella.
+/// Es StatefulWidget porque cambia (el botón enseña que está cargando).
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -16,24 +16,28 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _di = Injector.instance;
+  // El controller me deja leer lo que escribieron en el campo
   final _nombreCtrl = TextEditingController();
   bool _cargando = false;
 
   @override
+  // initState se ejecuta una vez, al abrir la pantalla
   void initState() {
     super.initState();
     _cargarUltimoEmpleado();
   }
 
+  // Pone el nombre del último que entró, para no escribirlo cada vez
   Future<void> _cargarUltimoEmpleado() async {
     try {
       final nombre = await _di.config.obtenerUltimoEmpleado();
       if (nombre != null && mounted) _nombreCtrl.text = nombre;
     } catch (_) {
-      // No es grave, solo no se autocompleta el nombre
+      // Si falla no pasa nada, solo no se llena el nombre
     }
   }
 
+  // Se llama al tocar "Iniciar turno con huella"
   Future<void> _entrar() async {
     final nombre = _nombreCtrl.text.trim();
     if (nombre.isEmpty) {
@@ -42,10 +46,13 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _cargando = true);
+    // Aquí sale la ventana de la huella / Face ID
     final resultado = await _di.auth.autenticar();
+    // mounted = la pantalla sigue abierta (por si el usuario salió mientras esperaba)
     if (!mounted) return;
     setState(() => _cargando = false);
 
+    // Según lo que pasó con la huella, hago una cosa u otra
     switch (resultado) {
       case ResultadoAuth.exito:
         await _iniciarTurno(nombre);
@@ -61,8 +68,8 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Si el celular no tiene huella ni PIN, se avisa y se deja entrar
-  /// solo si el usuario lo confirma (útil en emuladores).
+  /// Si el celular no tiene huella ni PIN (pasa en el emulador), aviso
+  /// que no es seguro y solo dejo entrar si confirma
   Future<void> _sinBiometria(String nombre) async {
     final continuar = await UiFeedback.confirmar(
       context,
@@ -74,13 +81,15 @@ class _LoginScreenState extends State<LoginScreen> {
     if (continuar) await _iniciarTurno(nombre);
   }
 
+  // Guardo quién está en turno y paso al inventario
   Future<void> _iniciarTurno(String nombre) async {
     _di.empleado = nombre;
     try {
       await _di.config.guardarUltimoEmpleado(nombre);
     } catch (_) {}
     if (!mounted) return;
-    // pushReplacement: el login sale de la pila y no se puede regresar
+    // pushReplacementNamed QUITA el login de la pila. Así, si le das atrás
+    // en el inventario, no regresa al login
     Navigator.pushReplacementNamed(context, Rutas.inventario);
   }
 
@@ -100,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.all(28),
             child: Column(
               children: [
-                // Animación de entrada del logo
+                // Animación del logo: crece con un rebotito al abrir (elasticOut)
                 TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0.6, end: 1),
                   duration: const Duration(milliseconds: 700),

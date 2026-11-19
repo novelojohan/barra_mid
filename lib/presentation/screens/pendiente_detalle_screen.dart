@@ -8,12 +8,13 @@ import '../widgets/foto_archivo.dart';
 import '../widgets/ubicacion_mapa.dart';
 import '../widgets/ui_feedback.dart';
 
-/// Detalle de un pendiente. Si ya está hecho muestra la evidencia
-/// (foto, quién, cuándo y mapa).
+/// Detalle de un pendiente. Si ya está hecho enseña la evidencia
+/// (foto, quién lo hizo, cuándo y el mapa). Si no, el botón para completarlo.
 class PendienteDetalleScreen extends StatelessWidget {
   final Pendiente pendiente;
   const PendienteDetalleScreen({super.key, required this.pendiente});
 
+  // Borrar el pendiente (solo admin), pidiendo confirmación
   Future<void> _eliminar(BuildContext context) async {
     final ok = await UiFeedback.confirmar(
       context,
@@ -32,8 +33,8 @@ class PendienteDetalleScreen extends StatelessWidget {
   }
 
   Future<void> _completar(BuildContext context) async {
-    // Se reemplaza esta pantalla por la de evidencia; al terminar
-    // regresa directo a la lista (la pila no crece).
+    // Abre la pantalla de evidencia. Cuando termina, cierro también este
+    // detalle para regresar directo a la lista
     final hecho = await Navigator.pushNamed(
       context,
       Rutas.pendienteCompletar,
@@ -49,7 +50,7 @@ class PendienteDetalleScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(pendiente.area),
         actions: [
-          // Solo el administrador puede borrar
+          // El botón de borrar solo aparece en modo admin
           if (Injector.instance.esAdmin)
             IconButton(
               tooltip: 'Eliminar',
@@ -61,6 +62,7 @@ class PendienteDetalleScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Si ya está hecho, enseño la foto con Hero
           if (pendiente.hecho)
             Hero(
               tag: 'pendiente-${pendiente.id}',

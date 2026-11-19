@@ -5,7 +5,8 @@ import '../../services/media_service.dart';
 import 'foto_archivo.dart';
 import 'ui_feedback.dart';
 
-/// Campo de formulario para tomar o elegir la foto de evidencia.
+/// Campo para la foto de evidencia: enseña la foto y los botones
+/// Cámara y Galería. Lo uso en el formulario de registro y en el de pendientes.
 class FotoEvidenciaField extends StatefulWidget {
   final String? ruta;
   final ValueChanged<String?> alCambiar;
@@ -28,16 +29,19 @@ class _FotoEvidenciaFieldState extends State<FotoEvidenciaField> {
   final MediaService _media = Injector.instance.media;
   bool _cargando = false;
 
+  // Abre la cámara o la galería según el botón que tocó
   Future<void> _elegir(OrigenFoto origen) async {
     setState(() => _cargando = true);
     try {
       final nueva = await _media.obtenerFoto(origen);
       if (nueva != null) {
-        // Si ya había una foto sin guardar, se borra para no dejar basura
+        // Si ya había otra foto, la borro para no dejar basura en el celular
         await _media.eliminarFoto(widget.ruta);
+        // Le aviso al formulario cuál es la nueva foto
         widget.alCambiar(nueva);
       }
     } catch (e) {
+      // Si negó el permiso de cámara, por ejemplo, enseño el mensaje
       if (mounted) UiFeedback.error(context, e);
     } finally {
       if (mounted) setState(() => _cargando = false);
@@ -60,6 +64,7 @@ class _FotoEvidenciaFieldState extends State<FotoEvidenciaField> {
           style: tema.textTheme.titleSmall,
         ),
         const SizedBox(height: 8),
+        // Cambia con animación entre "sin foto" y la foto
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: widget.ruta == null

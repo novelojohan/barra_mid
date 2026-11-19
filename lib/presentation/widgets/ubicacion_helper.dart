@@ -4,7 +4,8 @@ import '../../core/di/injector.dart';
 import '../../core/errors/app_exception.dart';
 import '../../services/verificador_tienda.dart';
 
-/// Resultado de pedir el GPS al momento de guardar.
+/// Lo que regresa al pedir el GPS al guardar.
+/// cancelado = el usuario decidió no guardar
 class ResultadoUbicacion {
   final CapturaUbicacion? captura;
   final bool cancelado;
@@ -14,15 +15,17 @@ class ResultadoUbicacion {
   static const sinUbicacion = ResultadoUbicacion._(null, false);
 }
 
-/// Captura el GPS al guardar. Si falla (GPS apagado o permiso negado)
-/// le pregunta al usuario si quiere guardar sin ubicación, cancelar
-/// o ir a ajustes. Así la app nunca se traba por el GPS.
+/// Toma el GPS al guardar. Si falla (GPS apagado o sin permiso), en vez
+/// de tronar le pregunto al usuario: ir a Ajustes, cancelar o guardar sin
+/// ubicación. Así el GPS nunca bloquea el trabajo.
 Future<ResultadoUbicacion> obtenerUbicacionParaGuardar(
   BuildContext context,
 ) async {
   try {
+    // Intento sacar la ubicación y ver si está en la tienda
     final captura = await Injector.instance.verificadorTienda.capturar();
     return ResultadoUbicacion._(captura, false);
+  // Si falló, enseño un diálogo con opciones
   } on AppException catch (e) {
     if (!context.mounted) return ResultadoUbicacion.cancelar;
     final permanente = e is PermissionDeniedException && e.permanentlyDenied;
@@ -51,6 +54,7 @@ Future<ResultadoUbicacion> obtenerUbicacionParaGuardar(
       ),
     );
 
+    // Según el botón que tocó, regreso lo que corresponde
     if (opcion == 'ajustes') {
       await Injector.instance.ubicacion.abrirAjustesApp();
       return ResultadoUbicacion.cancelar;

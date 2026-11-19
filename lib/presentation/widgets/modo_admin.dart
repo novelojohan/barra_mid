@@ -4,14 +4,15 @@ import 'package:flutter/services.dart';
 import '../../core/di/injector.dart';
 import 'ui_feedback.dart';
 
-/// Modo administrador: solo con el PIN se pueden borrar registros y
-/// pendientes. La primera vez se crea el PIN.
-///
-/// Regresa true si quedó activo el modo admin.
+/// Modo administrador.
+/// Solo con el PIN se pueden borrar registros y pendientes, y cambiar mínimos.
+/// La primera vez que alguien entra, se crea el PIN.
+/// Regresa true si sí entró al modo admin.
 Future<bool> entrarModoAdmin(BuildContext context) async {
   final di = Injector.instance;
   String? pinGuardado;
   try {
+    // Busco si ya hay un PIN guardado en la base
     pinGuardado = await di.config.obtenerPinAdmin();
   } catch (e) {
     if (context.mounted) UiFeedback.error(context, e);
@@ -19,7 +20,9 @@ Future<bool> entrarModoAdmin(BuildContext context) async {
   }
   if (!context.mounted) return false;
 
+  // Si no hay PIN, toca crearlo
   final creando = pinGuardado == null;
+  // Abro el diálogo y espero a que escriba el PIN
   final pin = await showDialog<String>(
     context: context,
     builder: (_) => _PinDialog(creando: creando),
@@ -28,21 +31,25 @@ Future<bool> entrarModoAdmin(BuildContext context) async {
 
   if (creando) {
     try {
+      // Primera vez: guardo el PIN nuevo
       await di.config.guardarPinAdmin(pin);
     } catch (e) {
       if (context.mounted) UiFeedback.error(context, e);
       return false;
     }
+  // Si no coincide con el guardado, no lo dejo entrar
   } else if (pin != pinGuardado) {
     UiFeedback.exito(context, 'PIN incorrecto');
     return false;
   }
 
+  // Todo bien: activo el modo admin para el resto del turno
   di.esAdmin = true;
   if (context.mounted) UiFeedback.exito(context, 'Modo administrador activo');
   return true;
 }
 
+// El diálogo donde se escribe el PIN
 class _PinDialog extends StatefulWidget {
   final bool creando;
   const _PinDialog({required this.creando});
@@ -77,6 +84,7 @@ class _PinDialogState extends State<_PinDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Solo deja escribir números
     final soloNumeros = [FilteringTextInputFormatter.digitsOnly];
     return AlertDialog(
       icon: const Icon(Icons.admin_panel_settings_outlined),

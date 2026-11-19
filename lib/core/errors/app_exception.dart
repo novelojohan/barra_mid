@@ -1,10 +1,13 @@
-/// Excepciones propias de la app.
+/// Mis propios errores.
 ///
-/// Tener nuestras propias excepciones permite que la capa de presentación
-/// muestre mensajes claros al usuario sin depender de los errores internos
-/// de cada paquete (sqflite, geolocator, image_picker, etc.).
+/// Cada paquete (SQLite, GPS, cámara) lanza sus errores raros y en inglés.
+/// Yo los atrapo y los convierto en uno de estos, con un mensaje en español
+/// que sí entiende el usuario. Así las pantallas solo tienen que mostrar
+/// error.message y ya.
 abstract class AppException implements Exception {
+  // El texto que le enseño al usuario
   final String message;
+  // El error original, por si necesito revisarlo
   final Object? cause;
 
   const AppException(this.message, {this.cause});
@@ -13,15 +16,15 @@ abstract class AppException implements Exception {
   String toString() => '$runtimeType: $message ${cause ?? ''}';
 }
 
-/// Error al leer o escribir en la base de datos local (SQLite).
+/// Cuando algo falla con la base de datos (guardar, leer, borrar)
 class StorageException extends AppException {
   const StorageException(super.message, {super.cause});
 }
 
-/// El usuario negó un permiso (cámara, micrófono, ubicación).
+/// Cuando el usuario no dio permiso de cámara, micrófono o ubicación
 class PermissionDeniedException extends AppException {
-  /// true cuando el permiso se negó "para siempre" y solo se puede
-  /// activar desde los ajustes del sistema.
+  /// true si lo negó "para siempre": ahí ya solo se puede activar
+  /// desde Ajustes, por eso enseño un botón que lleva a Ajustes
   final bool permanentlyDenied;
 
   const PermissionDeniedException(
@@ -31,8 +34,7 @@ class PermissionDeniedException extends AppException {
   });
 }
 
-/// Error con algún sensor o servicio del dispositivo (GPS apagado,
-/// micrófono no disponible, cámara ocupada, etc.).
+/// Cuando el sensor falla: GPS apagado, micrófono ocupado, etc.
 class DeviceServiceException extends AppException {
   const DeviceServiceException(super.message, {super.cause});
 }

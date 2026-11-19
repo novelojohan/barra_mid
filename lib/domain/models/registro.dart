@@ -2,8 +2,9 @@ import 'dart:convert';
 
 import 'geo_punto.dart';
 
-/// Tipo de movimiento que se anota en la bitácora.
-/// [signo] indica si suma (+1) o resta (-1) al inventario.
+/// Los tipos de movimiento que se pueden registrar en la bitácora.
+/// signo dice si suma (+1) o resta (-1) al inventario:
+/// producción y mixes suman botes, salida y merma los restan.
 enum TipoRegistro {
   produccion('produccion', 'Producción / relleno', 1),
   preparados('preparados', 'Preparé mixes', 1),
@@ -16,13 +17,15 @@ enum TipoRegistro {
   final String etiqueta;
   final int signo;
 
+  // Convierte el texto guardado en la base al tipo del enum
   static TipoRegistro desdeClave(String clave) => values.firstWhere(
         (t) => t.clave == clave,
         orElse: () => TipoRegistro.produccion,
       );
 }
 
-/// Una línea del registro: "2 botes de Plátano".
+/// Una línea del registro, ej. "2 botes de Plátano".
+/// Un registro puede tener varias líneas (ej. avena, cocoa y dátiles juntos)
 class RegistroItem {
   final int insumoId;
   final String nombre;
@@ -36,6 +39,7 @@ class RegistroItem {
     required this.cantidad,
   });
 
+  // Convierte la línea a JSON para guardarla en la base
   Map<String, dynamic> toJson() => {
         'insumo_id': insumoId,
         'nombre': nombre,
@@ -43,6 +47,7 @@ class RegistroItem {
         'cantidad': cantidad,
       };
 
+  // Y de JSON de regreso al objeto
   factory RegistroItem.fromJson(Map<String, dynamic> json) => RegistroItem(
         insumoId: json['insumo_id'] as int,
         nombre: json['nombre'] as String,
@@ -51,9 +56,10 @@ class RegistroItem {
       );
 }
 
-/// Entrada de la bitácora de barra (el "diario" de la app).
-/// Equivale a los mensajes que se mandaban por WhatsApp:
-/// "Se hicieron 2 botes de plátano" + foto.
+/// Un registro de la bitácora (el "diario" de la app).
+/// Es lo mismo que antes se mandaba por WhatsApp:
+/// "Se hicieron 2 botes de plátano" + la foto. Pero aquí además se
+/// guarda quién, cuándo, dónde y se actualiza el inventario.
 class Registro {
   final int? id;
   final TipoRegistro tipo;
@@ -62,8 +68,8 @@ class Registro {
   final String? fotoPath;
   final GeoPunto? ubicacion;
 
-  /// true = se registró dentro de la tienda, false = fuera,
-  /// null = no se pudo verificar.
+  /// true = se hizo dentro de la tienda, false = fuera,
+  /// null = no se pudo saber (no había GPS o no se configuró la tienda)
   final bool? enTienda;
   final String empleado;
   final DateTime fecha;
@@ -80,7 +86,7 @@ class Registro {
     this.enTienda,
   });
 
-  /// Ej: "2 Plátano, 1 Piña"
+  /// Resumen para la lista. Ej: "2 Plátano, 1 Piña"
   String get resumen =>
       items.map((i) => '${i.cantidad} ${i.nombre}').join(', ');
 
@@ -96,8 +102,9 @@ class Registro {
         enTienda: enTienda,
       );
 
-  /// Mapa para SQLite. La lista de items se serializa como JSON
-  /// en una sola columna (items_json).
+  /// Convierte el registro a Map para guardarlo en SQLite.
+  /// SQLite no puede guardar una lista directo, por eso la lista de items
+  /// la convierto a JSON (un texto) y la guardo en una sola columna: items_json
   Map<String, Object?> toMap() => {
         if (id != null) 'id': id,
         'tipo': tipo.clave,
@@ -106,12 +113,16 @@ class Registro {
         'foto_path': fotoPath,
         'latitud': ubicacion?.latitud,
         'longitud': ubicacion?.longitud,
+        // SQLite no tiene true/false, así que guardo 1 o 0
         'en_tienda': enTienda == null ? null : (enTienda! ? 1 : 0),
         'empleado': empleado,
+        // La fecha se guarda como texto, ej. 2026-11-17T08:20:00
         'fecha': fecha.toIso8601String(),
       };
 
+  // Lo contrario: de la fila de SQLite armo el Registro
   factory Registro.fromMap(Map<String, Object?> map) {
+    // jsonDecode convierte el texto JSON otra vez en una lista
     final itemsJson = jsonDecode(map['items_json'] as String) as List<dynamic>;
     final enTiendaDb = map['en_tienda'] as int?;
     return Registro(

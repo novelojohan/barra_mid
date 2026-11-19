@@ -3,38 +3,47 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../core/errors/app_exception.dart';
 
-/// Abre la base de datos SQLite y crea las tablas la primera vez.
-///
-/// Responsabilidad única: conexión y esquema. Las consultas viven en
-/// los repositorios.
+/// Esta clase abre la base de datos SQLite y crea las tablas la primera vez.
+/// Solo hace eso (una sola responsabilidad). Las consultas (guardar, leer)
+/// están en los repositorios.
 class AppDatabase {
+  // El archivo de la base se guarda dentro del celular, en la carpeta de la app
   static const _nombreArchivo = 'barra_mid.db';
-  static const _version = 2; // v2: agrega Oreo
+  static const _version = 2; // La subí a 2 cuando agregué el Oreo
 
+  // Aquí guardo la conexión para no abrir la base cada vez
   Future<Database>? _db;
 
-  /// Se abre una sola vez (lazy) y se reutiliza la misma conexión.
+  /// Si ya está abierta la reutilizo, si no, la abro.
+  /// ??= significa "asígnale esto solo si está vacío" 
   Future<Database> get database => _db ??= _abrir();
 
   Future<Database> _abrir() async {
     try {
+      // Le pregunto al celular en qué carpeta guarda las bases de datos
       final carpeta = await getDatabasesPath();
       return await openDatabase(
         p.join(carpeta, _nombreArchivo),
         version: _version,
+        // onCreate se ejecuta solo la primera vez que se instala la app
         onCreate: _crearTablas,
+        // onUpgrade se ejecuta si la app ya estaba instalada con una versión vieja
         onUpgrade: _actualizar,
       );
     } catch (e) {
-      _db = null; // Para poder reintentar después
+      _db = null; // Lo limpio para que se pueda volver a intentar
+      // Mando mi propio error con un mensaje en español
       throw StorageException('No se pudo abrir la base de datos', cause: e);
     }
   }
 
+  // Aquí creo las 4 tablas. Uso un batch (un paquete de instrucciones)
+  // para mandarlas todas juntas, es más rápido
   Future<void> _crearTablas(Database db, int version) async {
     final batch = db.batch();
 
     batch.execute('''
+      // Tabla de insumos: lo que hay en cada nevera
       CREATE TABLE insumos(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT NOT NULL,
@@ -46,6 +55,7 @@ class AppDatabase {
     ''');
 
     batch.execute('''
+      // Tabla de la bitácora. items_json guarda la lista de insumos como texto JSON
       CREATE TABLE registros(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         tipo TEXT NOT NULL,
@@ -61,6 +71,7 @@ class AppDatabase {
     ''');
 
     batch.execute('''
+      // Tabla de pendientes. Las columnas de evidencia se llenan al completarlo
       CREATE TABLE pendientes(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         titulo TEXT NOT NULL,
@@ -79,6 +90,7 @@ class AppDatabase {
     ''');
 
     batch.execute('''
+      // Tabla de configuración: pares clave-valor (último empleado, tienda, PIN)
       CREATE TABLE config(
         clave TEXT PRIMARY KEY,
         valor TEXT NOT NULL
@@ -89,8 +101,8 @@ class AppDatabase {
     await batch.commit(noResult: true);
   }
 
-  /// Migraciones: si la app ya estaba instalada con una versión vieja
-  /// de la BD, se agregan los cambios sin borrar los datos.
+  /// Migración: si alguien ya tenía la app instalada (versión 1), aquí le
+  /// agrego el Oreo SIN borrar lo que ya tenía guardado
   Future<void> _actualizar(Database db, int anterior, int nueva) async {
     if (anterior < 2) {
       final existe = await db.query('insumos',
@@ -107,8 +119,8 @@ class AppDatabase {
     }
   }
 
-  /// Insumos y pendientes reales de la barra para que la app no
-  /// arranque vacía.
+  /// Datos iniciales: los insumos y pendientes reales de la barra,
+  /// para que la app no empiece vacía
   void _insertarDatosIniciales(Batch batch) {
     const insumos = [
       // Nevera grande: producción
@@ -132,6 +144,7 @@ class AppDatabase {
       ['Oreo', 'barra', 'botes', 1, 1],
     ];
 
+    // Recorro la lista y meto cada insumo a la tabla
     for (final i in insumos) {
       batch.insert('insumos', {
         'nombre': i[0],

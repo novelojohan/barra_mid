@@ -5,7 +5,7 @@ import '../../domain/models/pendiente.dart';
 import '../widgets/dictado_text_field.dart';
 import '../widgets/ui_feedback.dart';
 
-/// Formulario para crear un pendiente nuevo.
+/// Formulario para crear un pendiente nuevo (qué hay que hacer, área y detalles)
 class PendienteFormScreen extends StatefulWidget {
   const PendienteFormScreen({super.key});
 
@@ -15,6 +15,7 @@ class PendienteFormScreen extends StatefulWidget {
 
 class _PendienteFormScreenState extends State<PendienteFormScreen> {
   final _di = Injector.instance;
+  // La llave del Form para validar que no esté vacío
   final _formKey = GlobalKey<FormState>();
   final _tituloCtrl = TextEditingController();
   final _descripcionCtrl = TextEditingController();
@@ -28,6 +29,7 @@ class _PendienteFormScreenState extends State<PendienteFormScreen> {
     super.dispose();
   }
 
+  // Valida, guarda el pendiente y regresa a la lista
   Future<void> _guardar() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _guardando = true);
@@ -67,6 +69,7 @@ class _PendienteFormScreenState extends State<PendienteFormScreen> {
                 hintText: 'Ej. Limpieza de la Breville',
                 border: OutlineInputBorder(),
               ),
+              // Si está vacío, enseña el mensaje en rojo debajo del campo
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Escribe el pendiente' : null,
             ),
@@ -84,6 +87,7 @@ class _PendienteFormScreenState extends State<PendienteFormScreen> {
               onChanged: (v) => setState(() => _area = v ?? _area),
             ),
             const SizedBox(height: 16),
+            // Los detalles se pueden dictar con el micrófono
             DictadoTextField(
               controller: _descripcionCtrl,
               etiqueta: 'Detalles (opcional)',

@@ -7,8 +7,9 @@ import '../../core/theme/app_theme.dart';
 import '../../domain/models/geo_punto.dart';
 import 'ui_feedback.dart';
 
-/// Mapa interactivo (OpenStreetMap) con el punto donde se registró
-/// y botón para abrir Google Maps.
+/// Mapa interactivo con el punto donde se guardó el registro.
+/// Uso flutter_map con los mapas de OpenStreetMap (son gratis y no piden API key).
+/// Abajo pongo un botón que abre las mismas coordenadas en Google Maps.
 class UbicacionMapa extends StatelessWidget {
   final GeoPunto punto;
   final bool? enTienda;
@@ -21,6 +22,7 @@ class UbicacionMapa extends StatelessWidget {
     this.altura = 200,
   });
 
+  // Abre Google Maps; si falla, enseño el error
   Future<void> _abrirGoogleMaps(BuildContext context) async {
     try {
       await Injector.instance.mapas.abrirEnGoogleMaps(punto);
@@ -39,19 +41,24 @@ class UbicacionMapa extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: SizedBox(
             height: altura,
+            // El mapa: se puede mover y hacer zoom con los dedos
             child: FlutterMap(
               options: MapOptions(
+                // Empieza centrado en el punto y con zoom de calle
                 initialCenter: latLng,
                 initialZoom: 17,
                 interactionOptions: const InteractionOptions(
+                  // Todos los gestos menos girar el mapa
                   flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
                 ),
               ),
               children: [
+                // Las imágenes del mapa (tiles) se descargan de OpenStreetMap
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.johan.barra_mid',
                 ),
+                // El pin rojo en el punto
                 MarkerLayer(
                   markers: [
                     Marker(
@@ -94,16 +101,17 @@ class UbicacionMapa extends StatelessWidget {
   }
 }
 
-/// Chip que indica si la evidencia se tomó dentro de la tienda.
+/// Etiqueta que dice si la evidencia se tomó en la tienda, fuera o no se sabe
 class EtiquetaTienda extends StatelessWidget {
   final bool? enTienda;
 
-  /// En listas solo se muestra el ícono con un tooltip.
+  /// En las listas solo enseño el ícono para que quepa
   final bool soloIcono;
   const EtiquetaTienda({super.key, required this.enTienda, this.soloIcono = false});
 
   @override
   Widget build(BuildContext context) {
+    // Según el valor escojo texto, ícono y color (3 casos: true, false, null)
     final (texto, icono, color) = switch (enTienda) {
       true => ('En tienda', Icons.verified, AppTheme.ok),
       false => ('Fuera de tienda', Icons.warning_amber, Colors.orange.shade300),

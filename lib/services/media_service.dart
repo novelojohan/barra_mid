@@ -7,35 +7,39 @@ import 'package:path_provider/path_provider.dart';
 
 import '../core/errors/app_exception.dart';
 
+// De dónde viene la foto
 enum OrigenFoto { camara, galeria }
 
-/// Contrato para obtener fotos de evidencia.
+/// Interfaz para las fotos de evidencia (cámara o galería)
 abstract class MediaService {
-  /// Regresa la ruta local de la foto guardada o null si el usuario canceló.
+  /// Regresa la ruta donde quedó guardada la foto, o null si el usuario canceló
   Future<String?> obtenerFoto(OrigenFoto origen);
+  // Borra la foto del celular (cuando se borra el registro o se cancela el formulario)
   Future<void> eliminarFoto(String? ruta);
 }
 
-/// Usa la cámara o galería con image_picker y copia la imagen a la
-/// carpeta privada de la app para que no se pierda si se borra de la
-/// galería o se limpia la caché.
+/// Saca la foto con el paquete image_picker (abre la cámara o la galería).
+/// Después copio la foto a una carpeta de la app, porque si la dejo donde
+/// la pone image_picker el celular la puede borrar, o si el usuario la borra
+/// de su galería se perdería la evidencia.
 class ImagePickerMediaService implements MediaService {
   final ImagePicker _picker = ImagePicker();
 
   @override
   Future<String?> obtenerFoto(OrigenFoto origen) async {
     try {
+      // Abre la cámara o la galería y espera a que el usuario tome/elija la foto
       final XFile? archivo = await _picker.pickImage(
         source: origen == OrigenFoto.camara
             ? ImageSource.camera
             : ImageSource.gallery,
-        imageQuality: 70, // Comprime para no llenar el celular
+        imageQuality: 70, // La comprimo un poco para que no pese tanto
         maxWidth: 1600,
       );
-      if (archivo == null) return null; // El usuario canceló
+      if (archivo == null) return null; // Le dio cancelar
       return await _guardarEnApp(archivo);
     } on PlatformException catch (e) {
-      // image_picker regresa "camera_access_denied" o "photo_access_denied"
+      // Si el usuario no dio permiso de cámara o fotos, aviso con mi propio error
       if (e.code.contains('access_denied')) {
         throw PermissionDeniedException(
           origen == OrigenFoto.camara
@@ -51,6 +55,7 @@ class ImagePickerMediaService implements MediaService {
     }
   }
 
+  // Copia la foto a la carpeta "evidencias" dentro de los documentos de la app
   Future<String> _guardarEnApp(XFile archivo) async {
     final docs = await getApplicationDocumentsDirectory();
     final carpeta = Directory(p.join(docs.path, 'evidencias'));
@@ -60,6 +65,7 @@ class ImagePickerMediaService implements MediaService {
     final extension = p.extension(archivo.path).isEmpty
         ? '.jpg'
         : p.extension(archivo.path);
+    // Le pongo un nombre único con la hora en milisegundos para que no se repita
     final destino = p.join(
       carpeta.path,
       'evid_${DateTime.now().millisecondsSinceEpoch}$extension',
@@ -75,7 +81,7 @@ class ImagePickerMediaService implements MediaService {
       final archivo = File(ruta);
       if (await archivo.exists()) await archivo.delete();
     } catch (_) {
-      // Si no se puede borrar la foto no detenemos al usuario.
+      // Si no se pudo borrar no pasa nada grave, no detengo al usuario
     }
   }
 }

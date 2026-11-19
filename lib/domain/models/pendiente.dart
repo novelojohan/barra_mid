@@ -1,6 +1,6 @@
 import 'geo_punto.dart';
 
-/// Áreas de la barra a las que se les asignan pendientes.
+/// Las áreas que se pueden escoger al crear un pendiente
 const List<String> areasBarra = [
   'Breville',
   'Franke',
@@ -10,8 +10,8 @@ const List<String> areasBarra = [
   'Otro',
 ];
 
-/// Tarea de la barra (limpieza de la Breville, rotación de producción...).
-/// Se marca como hecha subiendo una foto de evidencia.
+/// Un pendiente de la barra (limpiar la Breville, rotar producción, etc.).
+/// Solo se marca como hecho subiendo una foto de evidencia.
 class Pendiente {
   final int? id;
   final String titulo;
@@ -20,7 +20,8 @@ class Pendiente {
   final String creadoPor;
   final DateTime fechaCreacion;
 
-  // Datos de cuando se completa (evidencia)
+  // Estos datos se llenan hasta que alguien termina el pendiente.
+  // Mientras no esté hecho, valen null
   final DateTime? fechaCompletado;
   final String? completadoPor;
   final String? evidenciaPath;
@@ -43,9 +44,11 @@ class Pendiente {
     this.enTienda,
   });
 
+  // Si ya tiene fecha de completado, quiere decir que ya se hizo
   bool get hecho => fechaCompletado != null;
 
-  /// Regresa una copia del pendiente ya completado con su evidencia.
+  /// Regresa una copia del pendiente pero ya terminado, con la foto,
+  /// quién lo hizo, la nota y la ubicación
   Pendiente completar({
     required String empleado,
     required String evidenciaPath,
@@ -83,6 +86,7 @@ class Pendiente {
         enTienda: enTienda,
       );
 
+  // Para guardarlo en SQLite (cada llave es una columna)
   Map<String, Object?> toMap() => {
         if (id != null) 'id': id,
         'titulo': titulo,
@@ -99,6 +103,7 @@ class Pendiente {
         'en_tienda': enTienda == null ? null : (enTienda! ? 1 : 0),
       };
 
+  // De una fila de SQLite al objeto Pendiente
   factory Pendiente.fromMap(Map<String, Object?> map) {
     final completado = map['fecha_completado'] as String?;
     final enTiendaDb = map['en_tienda'] as int?;
